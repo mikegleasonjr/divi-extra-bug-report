@@ -1,0 +1,45 @@
+version: "3.1"
+
+services:
+  wait_for_database:
+    image: dadarek/wait-for-dependencies:0.2
+    environment:
+      - SLEEP_LENGTH=2
+      - TIMEOUT_LENGTH=20
+    depends_on:
+      - db
+    command:
+      - db:3306
+
+  migrations:
+    image: migrate/migrate:v4.5.0
+    volumes:
+      - ./migrations:/migrations
+    command:
+      - -path=/migrations/
+      - -database
+      - mysql://exampleuser:examplepass@tcp(db:3306)/exampledb
+      - up
+
+  wordpress:
+    image: wordpress:5.2.2-apache
+    volumes:
+      - ./Extra:/var/www/html/wp-content/themes/Extra
+      - ./query-monitor:/var/www/html/wp-content/plugins/query-monitor
+    ports:
+      - 8080:80
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: exampleuser
+      WORDPRESS_DB_PASSWORD: examplepass
+      WORDPRESS_DB_NAME: exampledb
+
+  db:
+    image: mysql/mysql-server:5.7
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: exampledb
+      MYSQL_USER: exampleuser
+      MYSQL_PASSWORD: examplepass
+      MYSQL_RANDOM_ROOT_PASSWORD: "1"
